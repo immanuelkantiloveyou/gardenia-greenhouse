@@ -1,10 +1,18 @@
 /* =========================
    GARDENIA GREENHOUSE
-   ORDER SYSTEM
+   ORDER SYSTEM + EMAILJS
 ========================= */
 
-
 let order = [];
+
+
+/* =========================
+   EMAILJS
+========================= */
+
+emailjs.init({
+    publicKey: "91HuOxrXCt117zzEp"
+});
 
 
 /* =========================
@@ -18,17 +26,13 @@ function addToOrder(name, price) {
     );
 
     if (existingItem) {
-
         existingItem.quantity++;
-
     } else {
-
         order.push({
             name: name,
             price: price,
             quantity: 1
         });
-
     }
 
     updateOrder();
@@ -56,26 +60,19 @@ function updateOrder() {
     const totalPrice =
         document.getElementById("totalPrice");
 
-
     orderContainer.innerHTML = "";
-
 
     if (order.length === 0) {
 
         emptyOrder.style.display = "block";
-
         totalPrice.textContent = "₱0";
 
         return;
-
     }
-
 
     emptyOrder.style.display = "none";
 
-
     let total = 0;
-
 
     order.forEach((item, index) => {
 
@@ -84,12 +81,10 @@ function updateOrder() {
 
         total += itemTotal;
 
-
         const itemElement =
             document.createElement("div");
 
         itemElement.className = "order-item";
-
 
         itemElement.innerHTML = `
 
@@ -104,7 +99,6 @@ function updateOrder() {
                 </small>
 
             </div>
-
 
             <div class="item-controls">
 
@@ -137,15 +131,11 @@ function updateOrder() {
 
         `;
 
-
         orderContainer.appendChild(itemElement);
 
     });
 
-
-    totalPrice.textContent =
-        `₱${total}`;
-
+    totalPrice.textContent = `₱${total}`;
 }
 
 
@@ -157,16 +147,11 @@ function changeQuantity(index, amount) {
 
     order[index].quantity += amount;
 
-
     if (order[index].quantity <= 0) {
-
         order.splice(index, 1);
-
     }
 
-
     updateOrder();
-
 }
 
 
@@ -179,7 +164,6 @@ function removeItem(index) {
     order.splice(index, 1);
 
     updateOrder();
-
 }
 
 
@@ -193,7 +177,6 @@ document
 
         event.preventDefault();
 
-
         if (order.length === 0) {
 
             alert(
@@ -201,9 +184,7 @@ document
             );
 
             return;
-
         }
-
 
         const name =
             document.getElementById("name").value.trim();
@@ -211,6 +192,8 @@ document
         const section =
             document.getElementById("section").value.trim();
 
+        const notes =
+            document.getElementById("notes").value.trim();
 
         if (!name || !section) {
 
@@ -219,26 +202,96 @@ document
             );
 
             return;
-
         }
 
 
-        document
-            .getElementById("successModal")
-            .classList.add("active");
+        /* =========================
+           CREATE ORDER DETAILS
+        ========================= */
 
+        let orderDetails = "";
 
-        console.log("Gardenia Greenhouse Order:");
+        order.forEach(item => {
 
-        console.log({
-            customer: name,
-            section: section,
-            items: order,
-            notes:
-                document
-                    .getElementById("notes")
-                    .value
+            const itemTotal =
+                item.price * item.quantity;
+
+            orderDetails +=
+                `${item.name} x${item.quantity} - ₱${itemTotal}\n`;
+
         });
+
+
+        /* =========================
+           CALCULATE TOTAL
+        ========================= */
+
+        let total = 0;
+
+        order.forEach(item => {
+
+            total +=
+                item.price * item.quantity;
+
+        });
+
+
+        /* =========================
+           EMAILJS DATA
+        ========================= */
+
+        const templateParams = {
+
+            customer_name: name,
+
+            section: section,
+
+            order_details: orderDetails,
+
+            total: total,
+
+            notes: notes || "No notes"
+
+        };
+
+
+        /* =========================
+           SEND EMAIL
+        ========================= */
+
+        emailjs
+            .send(
+                "gardenia_greenhouse",
+                "template_9mu19pm",
+                templateParams
+            )
+
+            .then(function(response) {
+
+                console.log(
+                    "ORDER SENT!",
+                    response.status,
+                    response.text
+                );
+
+                document
+                    .getElementById("successModal")
+                    .classList.add("active");
+
+            })
+
+            .catch(function(error) {
+
+                console.error(
+                    "EMAIL ERROR:",
+                    error
+                );
+
+                alert(
+                    "Something went wrong while sending your order. Please try again."
+                );
+
+            });
 
     });
 
@@ -253,16 +306,13 @@ function closeModal() {
         .getElementById("successModal")
         .classList.remove("active");
 
-
     document
         .getElementById("orderForm")
         .reset();
 
-
     order = [];
 
     updateOrder();
-
 }
 
 
